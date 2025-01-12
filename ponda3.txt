@@ -1,0 +1,86 @@
+/* Assignment #3
+   Name: Poojita Sai Sukanya Pondari
+   Compiler: Tiny C
+   Description: Edge detection using Sobel filter (Gx and Gy), outputting black edges on a white background.
+*/
+
+#include "PPMTools.h"
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+
+#define FILENAME_LEN 20
+
+int main() {
+    unsigned char *image, *output_image;
+    int cols, rows, threshold;
+    char filename[FILENAME_LEN];
+
+    printf("Enter image file name (with .ppm extension): ");
+    scanf("%s", filename);
+
+    printf("Enter threshold value for edge detection: ");
+    scanf("%d", &threshold);
+
+    image = ReadPPM(filename, &cols, &rows);
+    if (image == NULL) {
+        printf("Failed to read image.\n");
+        return 1;
+    }
+
+    output_image = CreatePPM(cols, rows);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            PutRPixel(output_image, cols, j, i, 255);
+            PutGPixel(output_image, cols, j, i, 255);
+            PutBPixel(output_image, cols, j, i, 255);
+        }
+    }
+
+    int Gx[3][3] = {
+        {-1, 0, 1},
+        {-2, 0, 2},
+        {-1, 0, 1}
+    };
+    int Gy[3][3] = {
+        {-1, -2, -1},
+        { 0,  0,  0},
+        { 1,  2,  1}
+    };
+
+    for (int i = 1; i < rows - 1; i++) {
+        for (int j = 1; j < cols - 1; j++) {
+            int gx = 0;
+            int gy = 0;
+
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    int gray = (
+                        GetRPixel(image, cols, j + y, i + x) +
+                        GetGPixel(image, cols, j + y, i + x) +
+                        GetBPixel(image, cols, j + y, i + x)
+                    ) / 3;
+
+                    gx += gray * Gx[x + 1][y + 1];
+                    gy += gray * Gy[x + 1][y + 1];
+                }
+            }
+
+            int edge_magnitude = (int)sqrt(gx * gx + gy * gy);
+
+            if (edge_magnitude > threshold) {
+                PutRPixel(output_image, cols, j, i, 0);
+                PutGPixel(output_image, cols, j, i, 0);
+                PutBPixel(output_image, cols, j, i, 0);
+            }
+        }
+    }
+
+    WritePPM("edge.ppm", output_image, rows, cols);
+
+    free(image);
+    free(output_image);
+
+    printf("Edge detection complete. Output saved as 'edge.ppm'.\n");
+    return 0;
+}
